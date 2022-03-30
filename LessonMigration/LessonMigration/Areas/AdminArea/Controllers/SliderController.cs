@@ -102,19 +102,6 @@ namespace LessonMigration.Areas.AdminArea.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Slider slider)
         {
-            slider = await GetSliderById(id);
-
-            if (slider == null) return NotFound();
-
-            string path = Helper.GetFilePath(_env.WebRootPath, "img", slider.Image);
-
-            Helper.DeleteFile(path);
-
-            _context.Sliders.Remove(slider);
-
-
-            if (ModelState["Photo"].ValidationState == ModelValidationState.Invalid) return View();
-
             if (!slider.Photo.CheckFileType("image/"))
             {
                 ModelState.AddModelError("Photo", "Image type is wrong");
@@ -127,6 +114,14 @@ namespace LessonMigration.Areas.AdminArea.Controllers
                 return View();
             }
 
+            Slider dbSlider = await _context.Sliders.FindAsync(id);
+
+            string path = Helper.GetFilePath(_env.WebRootPath, "img", dbSlider.Image);
+
+            Helper.DeleteFile(path);
+
+            
+
             string fileName = Guid.NewGuid().ToString() + "_" + slider.Photo.FileName;
 
             string newPath = Helper.GetFilePath(_env.WebRootPath, "img", fileName);
@@ -136,8 +131,7 @@ namespace LessonMigration.Areas.AdminArea.Controllers
                 await slider.Photo.CopyToAsync(stream);
             }
 
-            slider.Image = fileName;
-            await _context.Sliders.AddAsync(slider);
+            dbSlider.Image = fileName;
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
